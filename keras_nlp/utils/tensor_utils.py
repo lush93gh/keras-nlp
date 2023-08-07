@@ -44,7 +44,7 @@ def tensor_to_list(inputs):
     if isinstance(inputs, tf.RaggedTensor):
         list_outputs = inputs.to_list()
     elif isinstance(inputs, tf.Tensor):
-        list_outputs = inputs.numpy()
+        list_outputs = inputs
         if inputs.shape.rank != 0:
             list_outputs = list_outputs.tolist()
     if inputs.dtype == tf.string:
