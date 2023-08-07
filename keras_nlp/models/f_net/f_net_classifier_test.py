@@ -67,8 +67,10 @@ class FNetClassifierTest(tf.test.TestCase, parameterized.TestCase):
         )
         self.classifier = FNetClassifier(
             self.backbone,
-            4,
+            num_classes=4,
             preprocessor=self.preprocessor,
+            # Check we handle serialization correctly.
+            activation=keras.activations.softmax,
         )
 
         # Setup data.
@@ -88,9 +90,13 @@ class FNetClassifierTest(tf.test.TestCase, parameterized.TestCase):
         self.classifier(self.preprocessed_batch)
 
     def test_classifier_predict(self):
-        self.classifier.predict(self.raw_batch)
+        preds1 = self.classifier.predict(self.raw_batch)
         self.classifier.preprocessor = None
-        self.classifier.predict(self.preprocessed_batch)
+        preds2 = self.classifier.predict(self.preprocessed_batch)
+        # Assert predictions match.
+        self.assertAllClose(preds1, preds2)
+        # Assert valid softmax output.
+        self.assertAllClose(tf.reduce_sum(preds2, axis=-1), [1.0, 1.0])
 
     def test_fnet_classifier_fit(self):
         self.classifier.fit(self.raw_dataset)
@@ -120,9 +126,11 @@ class FNetClassifierTest(tf.test.TestCase, parameterized.TestCase):
     @pytest.mark.large
     def test_saved_model(self, save_format, filename):
         model_output = self.classifier.predict(self.raw_batch)
-        save_path = os.path.join(self.get_temp_dir(), filename)
-        self.classifier.save(save_path, save_format=save_format)
-        restored_model = keras.models.load_model(save_path)
+        path = os.path.join(self.get_temp_dir(), filename)
+        # Don't save traces in the tf format, we check compilation elsewhere.
+        kwargs = {"save_traces": False} if save_format == "tf" else {}
+        self.classifier.save(path, save_format=save_format, **kwargs)
+        restored_model = keras.models.load_model(path)
 
         # Check we got the real object back.
         self.assertIsInstance(restored_model, FNetClassifier)

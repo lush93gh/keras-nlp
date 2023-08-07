@@ -25,6 +25,10 @@ from keras_nlp.models.opt.opt_backbone import OPTBackbone
 
 class OPTTest(tf.test.TestCase, parameterized.TestCase):
     def setUp(self):
+        # For DTensor.
+        keras.backend.experimental.enable_tf_random_generator()
+        keras.utils.set_random_seed(1337)
+
         self.backbone = OPTBackbone(
             vocabulary_size=10,
             num_layers=2,
@@ -78,9 +82,11 @@ class OPTTest(tf.test.TestCase, parameterized.TestCase):
     @pytest.mark.large  # Saving is slow, so mark these large.
     def test_saved_model(self, save_format, filename):
         model_output = self.backbone(self.input_batch)
-        save_path = os.path.join(self.get_temp_dir(), filename)
-        self.backbone.save(save_path, save_format=save_format)
-        restored_model = keras.models.load_model(save_path)
+        path = os.path.join(self.get_temp_dir(), filename)
+        # Don't save traces in the tf format, we check compilation elsewhere.
+        kwargs = {"save_traces": False} if save_format == "tf" else {}
+        self.backbone.save(path, save_format=save_format, **kwargs)
+        restored_model = keras.models.load_model(path)
 
         # Check we got the real object back.
         self.assertIsInstance(restored_model, OPTBackbone)
@@ -88,6 +94,23 @@ class OPTTest(tf.test.TestCase, parameterized.TestCase):
         # Check that output matches.
         restored_output = restored_model(self.input_batch)
         self.assertAllClose(model_output, restored_output)
+
+    def test_create_layout_map(self):
+        mesh = tf.experimental.dtensor.create_mesh([("batch", 1), ("model", 1)])
+        with OPTBackbone.create_layout_map(mesh).scope():
+            OPTBackbone(
+                vocabulary_size=10,
+                num_layers=2,
+                num_heads=2,
+                hidden_dim=2,
+                intermediate_dim=4,
+                max_sequence_length=5,
+            )
+        # Using DTensor enables the mlir bridge as a side effect. Eventually
+        # this will be default, but for now we have compile errors with the
+        # bridge elsewhere and must disable. See
+        # https://github.com/keras-team/keras-nlp/issues/1001
+        tf.config.experimental.disable_mlir_bridge()
 
 
 @pytest.mark.tpu

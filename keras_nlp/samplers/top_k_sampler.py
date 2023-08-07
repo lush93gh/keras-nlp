@@ -26,7 +26,7 @@ from keras_nlp.utils.python_utils import format_docstring
 class TopKSampler(Sampler):
     """Top-K Sampler class.
 
-    This sampler implements top-k search algorithm. Briefly top-k algorithm
+    This sampler implements top-k search algorithm. Briefly, top-k algorithm
     randomly selects a token from the tokens of top K probability, with
     selection chance determined by the probability.
 
@@ -34,20 +34,21 @@ class TopKSampler(Sampler):
         k: int, the `k` value of top-k.
         seed: int, defaults to None. The random seed.
 
-    Call Args:
+    Call arguments:
         {{call_args}}
 
     Examples:
     ```python
-    # Use a simple alphabet of lowercase characters to [0, 26).
+    # Use a simple alphabet of lowercase characters with ids in range [0, 25].
     int_lookup = {i: chr(i + ord('a')) for i in range(26)}
     char_lookup = {v: k for k, v in int_lookup.items()}
     batch_size, length, vocab_size = 1, 12, len(int_lookup)
 
-    def next(prompt, state, index):
+    def next(prompt, cache, index):
+        hidden_states = tf.ones((batch_size, 10))
         # A uniform distribution over our alphabet.
         logits = tf.ones((batch_size, vocab_size))
-        return logits, state
+        return logits, hidden_states, cache
 
     output = keras_nlp.samplers.TopKSampler(k=3)(
         next=next,
@@ -55,7 +56,7 @@ class TopKSampler(Sampler):
         index=5,
     )
     print(["".join([int_lookup[i] for i in s]) for s in output.numpy()])
-    # >>> "zzzzzacbbcaa"
+    # >>> ['zzzzzacbbcaa']
     ```
     """
 
@@ -63,8 +64,9 @@ class TopKSampler(Sampler):
         self,
         k=5,
         seed=None,
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.k = k
         self.seed = seed
 

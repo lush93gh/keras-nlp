@@ -19,7 +19,6 @@ import copy
 import tensorflow as tf
 from tensorflow import keras
 
-from keras_nlp.api_export import keras_nlp_export
 from keras_nlp.layers.position_embedding import PositionEmbedding
 from keras_nlp.layers.transformer_decoder import TransformerDecoder
 from keras_nlp.layers.transformer_encoder import TransformerEncoder
@@ -32,7 +31,7 @@ def bart_kernel_initializer(stddev=0.02):
     return keras.initializers.TruncatedNormal(stddev=stddev)
 
 
-@keras_nlp_export("keras_nlp.models.BartBackbone")
+@keras.utils.register_keras_serializable(package="keras_nlp")
 class BartBackbone(Backbone):
     """BART encoder-decoder network.
 
@@ -76,6 +75,10 @@ class BartBackbone(Backbone):
             [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0], shape=(1, 12)
         ),
     }
+
+    # Pretrained BART encoder.
+    model = keras_nlp.models.BartBackbone.from_preset("bart_base_en")
+    model(input_data)
 
     # Randomly initialized BART encoder-decoder model with a custom config
     model = keras_nlp.models.BartBackbone(
