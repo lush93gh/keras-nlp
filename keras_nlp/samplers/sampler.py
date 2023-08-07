@@ -149,6 +149,9 @@ class Sampler:
             next_token = self.get_next_token(probabilities)
             # Don't overwrite anywhere mask is True.
             next_token = ops.cast(next_token, prompt.dtype)
+            # Ensure shape is `[None]`, otherwise it causes issues after
+            # converting to TFLite.
+            next_token = ops.ensure_shape(next_token, [None])
             next_token = ops.where(mask[:, index], prompt[:, index], next_token)
             # Update the prompt with the next token.
             next_token = next_token[:, None]

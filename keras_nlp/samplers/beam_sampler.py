@@ -174,6 +174,9 @@ class BeamSampler(Sampler):
             )
             beam_indices = indices // vocab_size
             next_token = flatten_beams(indices % vocab_size)
+            # Ensure shape is `[None]`, otherwise it causes issues after
+            # converting to TFLite.
+            next_token = tf.ensure_shape(next_token, [None])
             # We need `ensure_shape` as `top_k` will change the static shape.
             next_log_probs = flatten_beams(next_log_probs)
             # Work around for top_k output shape on tf backend.
