@@ -44,9 +44,12 @@ def tensor_to_list(inputs):
     if isinstance(inputs, tf.RaggedTensor):
         list_outputs = inputs.to_list()
     elif isinstance(inputs, tf.Tensor):
-        list_outputs = inputs
-        if inputs.shape.rank != 0:
-            list_outputs = list_outputs.tolist()
+        try:
+            list_outputs = inputs.numpy()
+            if inputs.shape.rank != 0:
+                list_outputs = list_outputs.tolist()
+        except:
+            print("Convert numpy error")
     if inputs.dtype == tf.string:
         list_outputs = _decode_strings_to_utf8(list_outputs)
     return list_outputs
