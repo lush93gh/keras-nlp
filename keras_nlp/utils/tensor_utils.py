@@ -39,20 +39,27 @@ def tensor_to_list(inputs):
     Args:
         inputs: Input tensor, or dict/list/tuple of input tensors.
     """
+    print(type(inputs))
+    print(inputs)
     if not isinstance(inputs, (tf.RaggedTensor, tf.Tensor)):
         inputs = tf.convert_to_tensor(inputs)
+        print("Convert to tensor")
     if isinstance(inputs, tf.RaggedTensor):
         list_outputs = inputs.to_list()
+        print("Is tf.RaggedTensor")
     elif isinstance(inputs, tf.Tensor):
+        print("Is tf.Tensor")
         try:
             list_outputs = inputs.numpy()
             if inputs.shape.rank != 0:
                 list_outputs = list_outputs.tolist()
         except:
+            print("Has no numpy")
             list_outputs = inputs
             if inputs.shape.rank != 0:
                 list_outputs = list_outputs.tolist()
     if inputs.dtype == tf.string:
+        print("Dtype is string")
         list_outputs = _decode_strings_to_utf8(list_outputs)
     return list_outputs
 
